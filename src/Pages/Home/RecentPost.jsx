@@ -47,9 +47,9 @@ export const RecentPost = () => {
   const fetchRecenetPost = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/recent-posts");
-      const fixedData = res.data.map(p =>({
+      const fixedData = res.data.map(p => ({
         ...p,
-        isFree:  p.isFree === true || p.isFree === "true"
+        isFree: p.isFree === true || p.isFree === "true"
       }));
       setPosts(fixedData)
     } catch (err) {
@@ -147,7 +147,7 @@ export const RecentPost = () => {
                         </button>
                       ) : post.isFree ? (
                         <button
-                          onClick={() => setSelectedPost(post)}
+                          onClick={() => navigate(`/order/${post._id}`) }
                           className="mt-2 w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg"
                         >
                           Book
@@ -203,14 +203,8 @@ export const RecentPost = () => {
             </div>
           )}
 
-          {/* ✅ Modal only for free items */}
-          {selectedPost && (
-           <BookOrOrderModel>
-            post={selectedPost}
-              onClose={() => setSelectedPost(null)}
-              refresh={fetchRecenetPost}
-           </BookOrOrderModel>
-          )}
+
+
         </>
       )}
     </section>

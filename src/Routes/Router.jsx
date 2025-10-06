@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import { Main } from '../Layout/Main';
 import { Home } from '../Pages/Home/Home';
 import UploadForm from '../Pages/UploadForm';
+import { BookOrOrderModel } from '../Pages/Pages/BookOrOrderModel';
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -15,6 +16,10 @@ export const router = createBrowserRouter([
         path:'post',
         element:<UploadForm></UploadForm>
        },
+       {
+        path:'/order/:id',
+        element:<BookOrOrderModel></BookOrOrderModel>
+       }
     ]
   },
 ]);
