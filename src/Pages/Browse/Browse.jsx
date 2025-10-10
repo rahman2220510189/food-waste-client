@@ -33,22 +33,25 @@ export const Browse = () => {
     );
   }, []);
 
-  // Fetch posts (initial)
+  // Fetch posts - userLocion
   useEffect(() => {
+    if (userLocation === null) return; // location
+    
     const fetchPosts = async () => {
       try {
-        const params = userLocation ? { lat: userLocation.lat, lng: userLocation.lng } : {};
+        const params = { lat: userLocation.lat, lng: userLocation.lng };
         const res = await axios.get("http://localhost:5000/api/posts", { params });
+        console.log("Fetched posts with distance:", res.data); // debug
         setPosts(res.data);
         setFiltered(res.data);
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching posts:", err);
       }
     };
     fetchPosts();
   }, [userLocation]);
 
-  // 🟡 Debounced suggestion search
+  // Debounced suggestion search
   const handleSearch = (query) => {
     setSearch(query);
 
@@ -71,7 +74,7 @@ export const Browse = () => {
     }, 300);
   };
 
-  // 🟢 Submit full search (button or suggestion click)
+  // Submit full search
   const handleSearchSubmit = async (e, query = null) => {
     e?.preventDefault();
     const q = query || search.trim();
@@ -89,7 +92,7 @@ export const Browse = () => {
     }
   };
 
-  // 🟢 Handle suggestion click
+  // Handle suggestion click
   const handleSuggestionClick = (sug) => {
     handleSearchSubmit(null, sug.title || sug.restaurantName || sug.area);
     setSearch(sug.title || sug.restaurantName || sug.area);
@@ -109,13 +112,27 @@ export const Browse = () => {
   const indexOfFirstPost = indexOfLastPost - postsPerPage;
   const currentPosts = filtered.slice(indexOfFirstPost, indexOfLastPost);
 
+  // Format date and time in Bengali
+  const formatDateTime = (dateString) => {
+    const date = new Date(dateString);
+    const options = { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    };
+    return date.toLocaleString('en-US', options);
+  };
+
   return (
     <section className="p-10 bg-gradient-to-br from-slate-700 to-slate-900 min-h-screen">
       <h2 className="text-3xl font-bold mb-6 text-yellow-300 text-center tracking-wide">
         🍽 Browse Delicious Food
       </h2>
 
-      {/* 🔍 Search and Filters */}
+      {/* Search and Filters */}
       <form
         onSubmit={handleSearchSubmit}
         className="flex flex-col md:flex-row justify-center items-center gap-4 mb-6 relative"
@@ -224,9 +241,13 @@ export const Browse = () => {
                     {post.title}
                   </h3>
                   <p className="text-sm text-gray-400">{post.location?.address}</p>
-                  <p className="text-xs text-gray-400">
-                    {post.distance?.toFixed(1)} km away
-                  </p>
+                  
+                  {/* Distance দেখাবে যদি থাকে */}
+                  {post.distance !== null && post.distance !== undefined ? (
+                    <p className="text-xs text-green-400 font-semibold">
+                      📍 {post.distance.toFixed(1)} km away
+                    </p>
+                  ) : null}
                   
                   {post.isFree ? (
                     <span className="inline-block mt-1 bg-green-600 text-white text-xs font-semibold px-2 py-1 rounded-lg">
@@ -266,12 +287,9 @@ export const Browse = () => {
                     </div>
                   )}
 
+                  {/* পোস্টের সম্পূর্ণ তারিখ ও সময় */}
                   <p className="text-xs text-gray-400 mt-2">
-                    Posted:{" "}
-                    {new Date(post.createdAt).toLocaleString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    Posted: {formatDateTime(post.createdAt)}
                   </p>
                 </div>
               </motion.div>
