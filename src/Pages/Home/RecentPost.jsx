@@ -160,12 +160,27 @@ export const RecentPost = () => {
                           >
                             Order
                           </button>
-                          <button
-                            onClick={() => handleAddToCart(post)}
-                            className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-2 rounded-lg"
-                          >
-                            Add to Cart
-                          </button>
+                      <div className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white py-2 rounded-lg transition flex justify-center items-center gap-2">
+                        <button
+                          onClick={async () => {
+                            try {
+                              const res = await axios.put(`http://localhost:5000/api/posts/${post._id}/order`);
+                              alert(`✅ Order placed! Remaining: ${res.data.remaining}`);
+
+                              const updatedPosts = posts.map((p) =>
+                                p._id === post._id ? { ...p, quantity: res.data.remaining } : p
+                              );
+                              setPosts(updatedPosts);
+                            } catch (err) {
+                              alert(err.response?.data?.error || "Order failed!");
+                            }
+                          }}
+                        >
+                          Available
+                        </button>
+                        <span className="text-sm font-semibold">{post.quantity ?? 0}</span>
+                      </div>
+
                         </div>
                       )}
 

@@ -16,13 +16,13 @@ export const Browse = () => {
   const debounceRef = useRef(null);
 
   // Animation variants
-  const containerVariants = { 
-    hidden: { opacity: 0 }, 
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } } 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
   };
-  const cardVariants = { 
-    hidden: { opacity: 0, y: 20 }, 
-    visible: { opacity: 1, y: 0 } 
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
   };
 
   // Get user location
@@ -36,7 +36,7 @@ export const Browse = () => {
   // Fetch posts - userLocion
   useEffect(() => {
     if (userLocation === null) return; // location
-    
+
     const fetchPosts = async () => {
       try {
         const params = { lat: userLocation.lat, lng: userLocation.lng };
@@ -63,8 +63,8 @@ export const Browse = () => {
 
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/posts/search", { 
-          params: { q: query } 
+        const res = await axios.get("http://localhost:5000/api/posts/search", {
+          params: { q: query }
         });
         setSuggestions(res.data.slice(0, 5));
       } catch (err) {
@@ -81,8 +81,8 @@ export const Browse = () => {
     if (!q) return;
 
     try {
-      const res = await axios.get("http://localhost:5000/api/posts/search", { 
-        params: { q } 
+      const res = await axios.get("http://localhost:5000/api/posts/search", {
+        params: { q }
       });
       setFiltered(res.data);
       setSuggestions([]);
@@ -115,9 +115,9 @@ export const Browse = () => {
   // Format date and time in Bengali
   const formatDateTime = (dateString) => {
     const date = new Date(dateString);
-    const options = { 
-      year: 'numeric', 
-      month: 'long', 
+    const options = {
+      year: 'numeric',
+      month: 'long',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
@@ -177,33 +177,30 @@ export const Browse = () => {
           <button
             onClick={() => setFilterType("free")}
             type="button"
-            className={`px-4 py-2 rounded-xl font-medium transition-all ${
-              filterType === "free"
+            className={`px-4 py-2 rounded-xl font-medium transition-all ${filterType === "free"
                 ? "bg-green-600 text-white shadow-lg scale-105"
                 : "bg-white text-gray-700 hover:bg-green-100"
-            }`}
+              }`}
           >
             Free
           </button>
           <button
             onClick={() => setFilterType("paid")}
             type="button"
-            className={`px-4 py-2 rounded-xl font-medium transition-all ${
-              filterType === "paid"
+            className={`px-4 py-2 rounded-xl font-medium transition-all ${filterType === "paid"
                 ? "bg-orange-600 text-white shadow-lg scale-105"
                 : "bg-white text-gray-700 hover:bg-orange-100"
-            }`}
+              }`}
           >
             Paid
           </button>
           <button
             onClick={() => setFilterType("all")}
             type="button"
-            className={`px-4 py-2 rounded-xl font-medium transition-all ${
-              filterType === "all"
+            className={`px-4 py-2 rounded-xl font-medium transition-all ${filterType === "all"
                 ? "bg-blue-600 text-white shadow-lg scale-105"
                 : "bg-white text-gray-700 hover:bg-blue-100"
-            }`}
+              }`}
           >
             All
           </button>
@@ -241,14 +238,14 @@ export const Browse = () => {
                     {post.title}
                   </h3>
                   <p className="text-sm text-gray-400">{post.location?.address}</p>
-                  
-                  {/* Distance দেখাবে যদি থাকে */}
+
+
                   {post.distance !== null && post.distance !== undefined ? (
                     <p className="text-xs text-green-400 font-semibold">
                       📍 {post.distance.toFixed(1)} km away
                     </p>
                   ) : null}
-                  
+
                   {post.isFree ? (
                     <span className="inline-block mt-1 bg-green-600 text-white text-xs font-semibold px-2 py-1 rounded-lg">
                       Free
@@ -278,16 +275,35 @@ export const Browse = () => {
                       >
                         Order
                       </button>
-                      <button
-                        onClick={() => console.log("Added to cart", post)}
-                        className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white py-2 rounded-lg transition"
-                      >
-                        Add to Cart
-                      </button>
+                      <div className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white py-2 rounded-lg transition flex justify-center items-center gap-2">
+                        <button
+                          onClick={async () => {
+                            try {
+                              const res = await axios.put(`http://localhost:5000/api/posts/${post._id}/order`);
+                              alert(`✅ Order placed! Remaining: ${res.data.remaining}`);
+
+                              const updatedPosts = posts.map((p) =>
+                                p._id === post._id ? { ...p, quantity: res.data.remaining } : p
+                              );
+                              setPosts(updatedPosts);
+                            } catch (err) {
+                              alert(err.response?.data?.error || "Order failed!");
+                            }
+                          }}
+                        >
+                          Available
+                        </button>
+                        <span className="text-sm font-semibold">{post.quantity ?? 0}</span>
+                      </div>
+
+
+
+
+
                     </div>
                   )}
 
-                  {/* পোস্টের সম্পূর্ণ তারিখ ও সময় */}
+
                   <p className="text-xs text-gray-400 mt-2">
                     Posted: {formatDateTime(post.createdAt)}
                   </p>
@@ -304,11 +320,10 @@ export const Browse = () => {
           <button
             key={i}
             onClick={() => setCurrentPage(i + 1)}
-            className={`px-3 py-1 rounded-lg ${
-              currentPage === i + 1
+            className={`px-3 py-1 rounded-lg ${currentPage === i + 1
                 ? "bg-yellow-500 text-white shadow-lg"
                 : "bg-white text-gray-700 hover:bg-yellow-100"
-            }`}
+              }`}
           >
             {i + 1}
           </button>
