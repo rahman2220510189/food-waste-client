@@ -6,7 +6,7 @@ export const LiveMap = () => {
 
   useEffect(() => {
 
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    const apiKey = "AIzaSyAvdkiJZbpnzb8Z7CmgxNyNtfhf4zOBFI8"
 
     if (!apiKey) {
       setError("❌ API key not found in .env file");

@@ -1,7 +1,17 @@
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { FiLogIn, FiMapPin, } from "react-icons/fi";
+import { useContext } from "react";
+import { AuthContext } from "../../firebase/Provider/AuthProviders";
 
 export const NavBar = () => {
+    const {user, logOut} = useContext(AuthContext);
+    const location = useLocation();
+    const handleLogOut = () =>{
+        logOut()
+        .then(() =>{
+            console.log('logged out')
+        })
+    }
     const navBar = <>
        <NavLink to="/" className={({ isActive }) => isActive ? "text-primary font-medium" : "text-slate-700 hover:text-primary"}>Home</NavLink>
         <NavLink to="/browse" className={({ isActive }) => isActive ? "text-primary font-medium" : "text-slate-700 hover:text-primary"}>Browse</NavLink>
@@ -53,9 +63,19 @@ export const NavBar = () => {
                    <div className="md:hidden">
          
         </div>
-         <Link to="/auth" className="px-3  py-2 mr-10  bg-primary text-white rounded-md flex items-center gap-2">
+        {
+            user? (<button
+                onClick={handleLogOut}
+                className="bg-blue-700 font-bold text-white px-4 py-2 rounded  hover:bg-red-600"
+            >
+                Log Out
+            </button>): <div className="flex gap-3 ml-6">
+                 <Link to="/login" state={{from: location}} className="px-3  py-2 mr-10  bg-primary text-white rounded-md flex items-center gap-2">
             <FiLogIn/> Login
           </Link>
+            </div>
+        }
+        
             </div>
         </div>
     );

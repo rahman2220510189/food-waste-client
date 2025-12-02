@@ -5,6 +5,8 @@ import UploadForm from '../Pages/UploadForm';
 import { BookOrOrderModel } from '../Pages/Pages/BookOrOrderModel';
 import { Browse } from '../Pages/Browse/Browse';
 import { LiveMap } from '../Other/LiveMap';
+import LogIn from '../SignUpRelated/LogIn';
+import SignUp from '../SignUpRelated/SignUp';
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -26,6 +28,14 @@ export const router = createBrowserRouter([
         path:'browse',
         element:<Browse></Browse>,
        },
+       {
+         path:'login' ,
+         element:<LogIn></LogIn> ,   
+       },
+       {
+        path:'signup',
+        element:<SignUp></SignUp>
+       }
      
     ]
   },
