@@ -9,9 +9,8 @@ import AuthProviders from './firebase/Provider/AuthProviders';
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AuthProviders>
-      <div className='max-w-screen-xl mx-auto'>
         <RouterProvider router={router} />
-    </div>
+    
     </AuthProviders>
   </React.StrictMode>
 );
