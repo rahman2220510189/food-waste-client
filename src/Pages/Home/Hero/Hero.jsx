@@ -11,7 +11,7 @@ export const Hero = () => {
     }, []);
     return (
         <div>
-            <section className="relative bg-slate-500 overflow-hidden h-[700px] sm:h-[800px]">
+            <section className="relative bg-slate-800 overflow-hidden h-[700px] sm:h-[800px]">
 
                 <div
                     className="absolute inset-0 z-0 bg-cover bg-center opacity-20 animate-pulse"
@@ -20,14 +20,14 @@ export const Hero = () => {
                 ></div>
 
 
-                <div className="relative z-10 max-w-4xl mx-auto px-6 py-64 text-center">
-                    <h1 className="text-4xl sm:text-5xl font-bold text-gray-800 mb-4">
+                <div className="relative z-10 max-w-4xl mx-auto px-6 py-64 mt-24 text-center">
+                    <h1 className="text-4xl sm:text-5xl font-bold text-yellow-50 mb-4">
                         Best food for your taste
                     </h1>
-                    <p className="text-lg text-gray-900 mb-8">
+                    <p className="text-lg text-yellow-50 mb-8">
                         Discover delectable cuisine and unforgettable moments in our welcoming culinary haven.
                     </p>
-                    <div className="flex justify-center mt-8">
+                    {/* <div className="flex justify-center mt-8">
                         <div className="relative w-full max-w-md">
                             <input
                                 type="text"
@@ -36,7 +36,7 @@ export const Hero = () => {
                             />
                             <FiSearch className="absolute left-3 top-3.5 text-gray-400 text-lg" />
                         </div>
-                    </div>
+                    </div> */}
 
                 </div>
             </section>

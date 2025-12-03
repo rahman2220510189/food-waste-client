@@ -1,13 +1,135 @@
 import axios from "axios";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { useForm } from "react-hook-form";
 import { useParams, useNavigate } from "react-router-dom";
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { LiveMap } from "../../Other/LiveMap";
+import { AuthContext } from "../../firebase/Provider/AuthProviders";
 
+// Replace with your Stripe publishable key
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_key');
+const PaymentForm = ({ post, quantity, orderData, onSuccess }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!stripe || !elements) return;
+
+    setProcessing(true);
+    setError("");
+
+    try {
+      // Create payment intent
+      const { data: intentData } = await axios.post(
+        "http://localhost:5000/api/payment/create-payment-intent",
+        {
+          amount: post.price * quantity,
+          postId: post._id,
+          userId: orderData.userId,
+          userName: orderData.userName,
+          contact: orderData.contact,
+          address: orderData.address,
+          quantity: quantity
+        }
+      );
+
+      // Confirm payment
+      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(
+        intentData.clientSecret,
+        {
+          payment_method: {
+            card: elements.getElement(CardElement),
+          }
+        }
+      );
+
+      if (stripeError) {
+        setError(stripeError.message);
+        setProcessing(false);
+        return;
+      }
+
+      // Confirm payment on backend
+      await axios.post("http://localhost:5000/api/payment/confirm-payment", {
+        paymentIntentId: paymentIntent.id,
+        postId: post._id,
+        userId: orderData.userId,
+        userName: orderData.userName,
+        contact: orderData.contact,
+        address: orderData.address,
+        quantity: quantity
+      });
+
+      onSuccess();
+    } catch (err) {
+      console.error("Payment error:", err);
+      setError(err.response?.data?.error || "Payment failed!");
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-4">
+      <div className="bg-gray-50 p-4 rounded-lg mb-4">
+        <label className="block text-sm font-semibold text-gray-700 mb-2">
+          Card Details
+        </label>
+        <CardElement
+          options={{
+            style: {
+              base: {
+                fontSize: '16px',
+                color: '#424770',
+                '::placeholder': {
+                  color: '#aab7c4',
+                },
+              },
+              invalid: {
+                color: '#9e2146',
+              },
+            },
+          }}
+          className="p-3 border border-gray-300 rounded-lg bg-white"
+        />
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
+          ⚠️ {error}
+        </div>
+      )}
+
+      <button
+        type="submit"
+        disabled={!stripe || processing}
+        className={`w-full py-3 rounded-lg font-semibold text-white transition duration-200 ${
+          !stripe || processing
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-md hover:shadow-lg active:scale-95"
+        }`}
+      >
+        {processing ? (
+          <span className="flex items-center justify-center gap-2">
+            <span className="inline-block animate-spin">⟳</span>
+            Processing Payment...
+          </span>
+        ) : (
+          `Pay ৳${(post.price * quantity).toFixed(2)}`
+        )}
+      </button>
+    </form>
+  );
+};
 
 export const BookOrOrderModel = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -16,6 +138,8 @@ export const BookOrOrderModel = () => {
   const [distance, setDistance] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [orderFormData, setOrderFormData] = useState(null);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -41,13 +165,13 @@ export const BookOrOrderModel = () => {
 
   const handleQuantityChange = (e) => {
     const value = parseInt(e.target.value);
-    if (value > 0 && value <= post.quantity) {
+    if (post && value > 0 && value <= post.quantity) {
       setQuantity(value);
     }
   };
 
   const handleQuantityIncrement = () => {
-    if (quantity < post.quantity) {
+    if (post && quantity < post.quantity) {
       setQuantity(quantity + 1);
     }
   };
@@ -59,7 +183,7 @@ export const BookOrOrderModel = () => {
   };
 
   const calculateTotalPrice = () => {
-    if (post.isFree) return 0;
+    if (!post || post.isFree) return 0;
     return (post.price * quantity).toFixed(2);
   };
 
@@ -71,17 +195,21 @@ export const BookOrOrderModel = () => {
     try {
       const submitData = {
         ...data,
+        userId: user?.uid || "anonymous",
         quantity,
         paymentMethod,
         totalPrice: calculateTotalPrice()
       };
 
+      // For online payment
       if (!post.isFree && paymentMethod === "online") {
-        setErrorMsg("Payment gateway integration coming soon!");
+        setOrderFormData(submitData);
+        setShowPaymentForm(true);
         setLoading(false);
         return;
       }
 
+      // For cash on delivery or free booking
       const endpoint = post.isFree 
         ? `/api/posts/${id}/book` 
         : `/api/posts/${id}/order`;
@@ -96,14 +224,7 @@ export const BookOrOrderModel = () => {
       setQuantity(1);
       
       setTimeout(() => {
-        navigate("/browse", { 
-          state: { 
-            type: post.isFree ? "booking" : "order",
-            postTitle: post.title,
-            userData: submitData,
-            paymentMethod
-          } 
-        });
+        navigate("/notifications");
       }, 2000);
       
     } catch (err) {
@@ -111,6 +232,16 @@ export const BookOrOrderModel = () => {
       setErrorMsg(err.response?.data?.error || "Operation failed!");
       setLoading(false);
     }
+  };
+
+  const handlePaymentSuccess = () => {
+    setSuccessMsg("Payment successful! Wait for owner's approval.");
+    setShowPaymentForm(false);
+    setLoading(false);
+    
+    setTimeout(() => {
+      navigate("/notifications");
+    }, 2000);
   };
 
   if (!post) {
@@ -142,22 +273,18 @@ export const BookOrOrderModel = () => {
           </button>
         </div>
 
-        {/* MAP - TOP SECTION */}
         <div className="mb-0">
           <LiveMap />
         </div>
 
-        {/* FORM - BOTTOM SECTION */}
         <div className="bg-white rounded-b-2xl shadow-2xl px-6 pb-6 pt-4">
           
-          {/* Product Image */}
           <img
             src={post.image}
             alt={post.title}
             className="w-full h-72 object-cover rounded-xl mb-4 shadow-md"
           />
           
-          {/* Product Title and Badge */}
           <div className="flex items-start justify-between mb-3">
             <h2 className="text-2xl font-bold text-gray-800">{post.title}</h2>
             <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
@@ -200,7 +327,6 @@ export const BookOrOrderModel = () => {
             </p>
           </div>
 
-          {/* Total Price */}
           {!isOutOfStock && !post.isFree && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
               <p className="text-sm font-semibold text-blue-900 mb-2">💳 Total Price</p>
@@ -208,172 +334,186 @@ export const BookOrOrderModel = () => {
             </div>
           )}
 
-          {/* FORM */}
-          <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
-            
-            {/* Full Name */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Full Name
-              </label>
-              <input
-                type="text"
-                {...register("userName", { 
-                  required: "Name is required",
-                  minLength: { value: 2, message: "Name must be at least 2 characters" }
-                })}
-                className={`w-full border rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition ${
-                  errors.userName ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Enter your full name"
-                disabled={isOutOfStock}
-              />
-              {errors.userName && <p className="text-red-500 text-xs mt-1">{errors.userName.message}</p>}
+          {showPaymentForm ? (
+            <div className="mt-6">
+              <Elements stripe={stripePromise}>
+                <PaymentForm
+                  post={post}
+                  quantity={quantity}
+                  orderData={orderFormData}
+                  onSuccess={handlePaymentSuccess}
+                />
+              </Elements>
+              <button
+                onClick={() => setShowPaymentForm(false)}
+                className="w-full mt-3 py-2 text-gray-600 hover:text-gray-800 font-medium"
+              >
+                ← Back to Order Form
+              </button>
             </div>
-
-            {/* Contact Number */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Contact Number
-              </label>
-              <input
-                type="tel"
-                {...register("contact", { 
-                  required: "Contact number is required",
-                  pattern: { value: /^[0-9]{10,11}$/, message: "Please enter a valid phone number (10-11 digits)" }
-                })}
-                className={`w-full border rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition ${
-                  errors.contact ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Enter your phone number"
-                disabled={isOutOfStock}
-              />
-              {errors.contact && <p className="text-red-500 text-xs mt-1">{errors.contact.message}</p>}
-            </div>
-
-            {/* Delivery Address */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Delivery Address
-              </label>
-              <textarea
-                {...register("address", { 
-                  required: "Address is required",
-                  minLength: { value: 10, message: "Please enter a complete address" }
-                })}
-                className={`w-full border rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition resize-none ${
-                  errors.address ? 'border-red-500' : 'border-gray-300'
-                }`}
-                rows="3"
-                placeholder="Enter your complete delivery address"
-                disabled={isOutOfStock}
-              ></textarea>
-              {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address.message}</p>}
-            </div>
-
-            {/* Quantity */}
-            {!post.isFree && !isOutOfStock && (
+          ) : (
+            <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
+              
+              {/* Full Name */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  📦 Quantity
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Full Name
                 </label>
-                <div className="flex items-center gap-3 mb-3">
-                  <button
-                    type="button"
-                    onClick={handleQuantityDecrement}
-                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-3 rounded-lg transition"
-                  >
-                    −
-                  </button>
-                  <input
-                    type="number"
-                    value={quantity}
-                    onChange={handleQuantityChange}
-                    min="1"
-                    max={post.quantity}
-                    className="border border-gray-300 rounded-lg px-4 py-2 w-20 text-center focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleQuantityIncrement}
-                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-3 rounded-lg transition"
-                  >
-                    +
-                  </button>
-                  <span className="text-sm text-gray-600 ml-2">Max: {post.quantity}</span>
-                </div>
+                <input
+                  type="text"
+                  {...register("userName", { 
+                    required: "Name is required",
+                    minLength: { value: 2, message: "Name must be at least 2 characters" }
+                  })}
+                  className={`w-full border rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition ${
+                    errors.userName ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter your full name"
+                  disabled={isOutOfStock}
+                />
+                {errors.userName && <p className="text-red-500 text-xs mt-1">{errors.userName.message}</p>}
               </div>
-            )}
 
-            {/* Payment Method */}
-            {!post.isFree && !isOutOfStock && (
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  💳 Payment Method
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Contact Number
                 </label>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition">
-                    <input
-                      type="radio"
-                      value="cash"
-                      checked={paymentMethod === "cash"}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="w-4 h-4 cursor-pointer"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Cash on Delivery</span>
+                <input
+                  type="tel"
+                  {...register("contact", { 
+                    required: "Contact number is required",
+                    pattern: { value: /^[0-9]{10,11}$/, message: "Please enter a valid phone number (10-11 digits)" }
+                  })}
+                  className={`w-full border rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition ${
+                    errors.contact ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter your phone number"
+                  disabled={isOutOfStock}
+                />
+                {errors.contact && <p className="text-red-500 text-xs mt-1">{errors.contact.message}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Delivery Address
+                </label>
+                <textarea
+                  {...register("address", { 
+                    required: "Address is required",
+                    minLength: { value: 10, message: "Please enter a complete address" }
+                  })}
+                  className={`w-full border rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition resize-none ${
+                    errors.address ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  rows="3"
+                  placeholder="Enter your complete delivery address"
+                  disabled={isOutOfStock}
+                ></textarea>
+                {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address.message}</p>}
+              </div>
+
+              {!post.isFree && !isOutOfStock && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    📦 Quantity
                   </label>
-                  <label className="flex items-center gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                  <div className="flex items-center gap-3 mb-3">
+                    <button
+                      type="button"
+                      onClick={handleQuantityDecrement}
+                      className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-3 rounded-lg transition"
+                    >
+                      −
+                    </button>
                     <input
-                      type="radio"
-                      value="online"
-                      checked={paymentMethod === "online"}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="w-4 h-4 cursor-pointer"
+                      type="number"
+                      value={quantity}
+                      onChange={handleQuantityChange}
+                      min="1"
+                      max={post.quantity}
+                      className="border border-gray-300 rounded-lg px-4 py-2 w-20 text-center focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
-                    <span className="text-sm font-medium text-gray-700">Online Payment</span>
-                  </label>
+                    <button
+                      type="button"
+                      onClick={handleQuantityIncrement}
+                      className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-3 rounded-lg transition"
+                    >
+                      +
+                    </button>
+                    <span className="text-sm text-gray-600 ml-2">Max: {post.quantity}</span>
+                  </div>
                 </div>
-              </div>
-            )}
-
-            {/* Error Message */}
-            {errorMsg && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm animate-pulse">
-                ⚠️ {errorMsg}
-              </div>
-            )}
-
-            {/* Success Message */}
-            {successMsg && (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm font-semibold animate-pulse">
-                ✓ {successMsg}
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading || successMsg || isOutOfStock}
-              className={`w-full mt-4 py-3 rounded-lg font-semibold text-white transition duration-200 flex items-center justify-center gap-2 ${
-                loading || successMsg || isOutOfStock
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-md hover:shadow-lg active:scale-95"
-              }`}
-            >
-              {isOutOfStock ? (
-                "❌ Out of Stock"
-              ) : loading ? (
-                <>
-                  <span className="inline-block animate-spin">⟳</span>
-                  {actionLabel}...
-                </>
-              ) : successMsg ? (
-                "✓ Redirecting..."
-              ) : (
-                actionText
               )}
-            </button>
-          </form>
+
+              {!post.isFree && !isOutOfStock && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    💳 Payment Method
+                  </label>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                      <input
+                        type="radio"
+                        value="cash"
+                        checked={paymentMethod === "cash"}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="w-4 h-4 cursor-pointer"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Cash on Delivery</span>
+                    </label>
+                    <label className="flex items-center gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                      <input
+                        type="radio"
+                        value="online"
+                        checked={paymentMethod === "online"}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="w-4 h-4 cursor-pointer"
+                      />
+                      <span className="text-sm font-medium text-gray-700">💳 Online Payment (Stripe)</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+              
+              {/* Error Message */}
+              {errorMsg && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm animate-pulse">
+                  ⚠️ {errorMsg}
+                </div>
+              )}
+
+              {/* Success Message */}
+              {successMsg && (
+                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm font-semibold animate-pulse">
+                  ✓ {successMsg}
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading || successMsg || isOutOfStock}
+                className={`w-full mt-4 py-3 rounded-lg font-semibold text-white transition duration-200 flex items-center justify-center gap-2 ${
+                  loading || successMsg || isOutOfStock
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-md hover:shadow-lg active:scale-95"
+                }`}
+              >
+                {isOutOfStock ? (
+                  "❌ Out of Stock"
+                ) : loading ? (
+                  <>
+                    <span className="inline-block animate-spin">⟳</span>
+                    {actionLabel}...
+                  </>
+                ) : successMsg ? (
+                  "✓ Redirecting..."
+                ) : (
+                  actionText
+                )}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>

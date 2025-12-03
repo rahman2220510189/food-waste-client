@@ -90,7 +90,7 @@ export const RecentPost = () => {
   };
 
   return (
-    <section className="p-10 bg-slate-500 min-h-screen">
+    <section className="p-10 bg-gray-950 min-h-screen">
       <h2 className="text-2xl font-bold mb-4 text-white">
         Recent Posts (last 2 hrs)
       </h2>
