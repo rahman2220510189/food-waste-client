@@ -14,8 +14,12 @@ const ChatWindow = ({ chat, socket }) => {
       fetchMessages();
       socket.emit("join-chat", chat._id);
 
+      // receive-message: শুধু অন্যজনের message add করবে
+      // নিজেরটা handleSend এ সাথে সাথে add হয়ে যাবে
       socket.on("receive-message", (message) => {
-        setMessages((prev) => [...prev, message]);
+        if (message.senderId !== user.uid) {
+          setMessages((prev) => [...prev, message]);
+        }
       });
 
       return () => {
@@ -48,7 +52,6 @@ const ChatWindow = ({ chat, socket }) => {
 
   const handleSend = async (e) => {
     e.preventDefault();
-
     if (!newMessage.trim()) return;
 
     const messageData = {
@@ -57,20 +60,23 @@ const ChatWindow = ({ chat, socket }) => {
       text: newMessage.trim(),
     };
 
+    // Optimistic UI: নিজের message সাথে সাথে দেখাবে
+    const optimisticMessage = {
+      ...messageData,
+      _id: `temp-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimisticMessage]);
+    setNewMessage("");
+
     try {
-      // Send via socket for real-time
+      // শুধু socket দিয়ে পাঠাবে — server socket handler DB তে save করবে
+      // API আলাদা করে call করা দরকার নেই, double save হবে
       socket.emit("send-message", messageData);
-
-      // Also save to database
-      await fetch("http://localhost:5000/api/messages/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(messageData),
-      });
-
-      setNewMessage("");
     } catch (error) {
       console.error("Error sending message:", error);
+      // Error হলে optimistic message সরিয়ে দাও
+      setMessages((prev) => prev.filter((m) => m._id !== optimisticMessage._id));
     }
   };
 
@@ -119,7 +125,7 @@ const ChatWindow = ({ chat, socket }) => {
             const isOwnMessage = message.senderId === user.uid;
             return (
               <div
-                key={index}
+                key={message._id || index}
                 className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
               >
                 <div

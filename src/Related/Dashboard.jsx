@@ -58,7 +58,7 @@ const Dashboard = () => {
     );
   }
 
-  // --- Component for Statistic Cards ---
+  //  Component for Statistic Cards 
   const StatCard = ({ icon: Icon, title, value, subtitle, color }) => (
     <div className="bg-gray-800 rounded-xl shadow-2xl p-6 hover:shadow-indigo-500/30 transition duration-300 transform hover:-translate-y-1 border border-gray-700">
       <div className="flex items-center justify-between">
@@ -99,7 +99,7 @@ const Dashboard = () => {
           <p className="text-indigo-400 text-xl mt-3">Your FoodShare Activity Hub</p>
         </div>
 
-        {/* --- STAT CARDS --- */}
+        {/* STAT CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           <StatCard
             icon={FiDollarSign}
