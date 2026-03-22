@@ -11,6 +11,7 @@ import Notifications from '../Related/Notifications';
 import Messages from '../Related/Messages';
 import History from '../Related/History';
 import Dashboard from '../Related/Dashboard';
+import AdminPanel from '../Pages/AdminPanel';
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -56,6 +57,7 @@ export const router = createBrowserRouter([
       path:'/dashboard',
       element:<Dashboard></Dashboard>
      },
+    { path: "/admin", element: <AdminPanel /> }
    
     ]
   },

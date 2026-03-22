@@ -1,13 +1,12 @@
 import { Link, NavLink, useLocation } from "react-router-dom";
 import {
   FiLogIn, FiLogOut, FiBell, FiMessageCircle,
-  FiClock, FiMenu, FiX, FiHome, FiSearch, FiFeather,
+  FiClock, FiMenu, FiX, FiHome, FiSearch, FiFeather, FiShield,
 } from "react-icons/fi";
 import { useContext, useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import { AuthContext } from "../../firebase/Provider/AuthProviders";
 
-// Socket একবার তৈরি করো — Navbar mount হলে connect হবে
 const socket = io("http://localhost:5000");
 
 export const NavBar = () => {
@@ -16,8 +15,8 @@ export const NavBar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [unreadMsgCount, setUnreadMsgCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  // ── Notification count fetch ──────────────────────────────
   useEffect(() => {
     if (!user?.uid) return;
 
@@ -27,7 +26,6 @@ export const NavBar = () => {
           `http://localhost:5000/api/notifications?userId=${user.uid}`
         );
         const data = await res.json();
-        // pending notification গুলো count করবে
         const pending = data.filter((n) => n.status === "pending").length;
         setUnreadNotifCount(pending);
       } catch (err) {
@@ -37,8 +35,19 @@ export const NavBar = () => {
 
     fetchNotifCount();
 
-    // Socket দিয়ে real-time: নতুন notification আসলে count বাড়বে
-    socket.emit("join-user", user.uid); // server এ user এর room এ join করবে
+    // Admin role check
+    const checkAdmin = async () => {
+      try {
+        const res  = await fetch(`http://localhost:5000/api/users/${user.uid}`);
+        const data = await res.json();
+        setIsAdmin(data?.role === "admin");
+      } catch (err) {
+        console.error("Admin check error:", err);
+      }
+    };
+    checkAdmin();
+
+    socket.emit("join-user", user.uid); 
 
     socket.on("new-notification", () => {
       setUnreadNotifCount((prev) => prev + 1);
@@ -46,7 +55,6 @@ export const NavBar = () => {
 
     // Message unread count
     socket.on("new-message", (message) => {
-      // যদি অন্যজনের message হয় তাহলে count বাড়াও
       if (message.senderId !== user.uid) {
         setUnreadMsgCount((prev) => prev + 1);
       }
@@ -58,7 +66,7 @@ export const NavBar = () => {
     };
   }, [user]);
 
-  // Notification page এ গেলে badge clear হবে
+  // Notification page
   useEffect(() => {
     if (location.pathname === "/notifications") {
       setUnreadNotifCount(0);
@@ -134,6 +142,13 @@ export const NavBar = () => {
           <NavLink to="/history" className={navLinkClasses}>
             <FiClock className="h-5 w-5" /> History
           </NavLink>
+
+          {/* Admin link — শুধু admin role এ দেখাবে */}
+          {isAdmin && (
+            <NavLink to="/admin" className={navLinkClasses}>
+              <FiShield className="h-5 w-5" /> Admin
+            </NavLink>
+          )}
         </>
       )}
     </>
