@@ -62,7 +62,7 @@ const UploadForm = ({ onUpload }) => {
       // Add ownerId to FormData
       data.append("ownerId", user.uid);
 
-      const res = await axios.post("http://localhost:5000/api/posts", data, {
+      const res = await axios.post("https://food-waste-server-pio7.onrender.com/api/posts", data, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 

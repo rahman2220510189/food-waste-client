@@ -18,7 +18,7 @@ const Notifications = () => {
   const fetchNotifications = async () => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/notifications?userId=${user.uid}`
+        `https://food-waste-server-pio7.onrender.com/api/notifications?userId=${user.uid}`
       );
       const data = await response.json();
       setNotifications(data);
@@ -32,7 +32,7 @@ const Notifications = () => {
   const handleAccept = async (notificationId) => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/notifications/${notificationId}/accept`,
+        `https://food-waste-server-pio7.onrender.com/api/notifications/${notificationId}/accept`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -62,7 +62,7 @@ const Notifications = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/notifications/${notificationId}/cancel`,
+        `https://food-waste-server-pio7.onrender.com/api/notifications/${notificationId}/cancel`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -142,7 +142,7 @@ const Notifications = () => {
                     {notification.foodImage && (
                       <div className="flex-shrink-0">
                         <img
-                          src={notification.foodImage}
+                          src={notification.foodImage?.replace('http://localhost:5000', 'https://food-waste-server-pio7.onrender.com')}
                           alt={notification.foodTitle}
                           className="w-24 h-24 object-cover rounded-lg shadow-md"
                         />

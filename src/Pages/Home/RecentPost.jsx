@@ -46,7 +46,7 @@ export const RecentPost = () => {
 
   const fetchRecenetPost = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/recent-posts");
+      const res = await axios.get("https://food-waste-server-pio7.onrender.com/api/recent-posts");
       const fixedData = res.data.map(p => ({
         ...p,
         isFree: p.isFree === true || p.isFree === "true"
@@ -118,7 +118,7 @@ export const RecentPost = () => {
                     className="bg-white shadow-md rounded-xl overflow-hidden"
                   >
                     <img
-                      src={post.image}
+                      src={post.image?.replace('http://localhost:5000', 'https://food-waste-server-pio7.onrender.com')}
                       alt={post.title}
                       className="w-full h-48 object-cover"
                     />
@@ -164,7 +164,7 @@ export const RecentPost = () => {
                         <button
                           onClick={async () => {
                             try {
-                              const res = await axios.put(`http://localhost:5000/api/posts/${post._id}/order`);
+                              const res = await axios.put(`https://food-waste-server-pio7.onrender.com/api/posts/${post._id}/order`);
                               alert(`✅ Order placed! Remaining: ${res.data.remaining}`);
 
                               const updatedPosts = posts.map((p) =>

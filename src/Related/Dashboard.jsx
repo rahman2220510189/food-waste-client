@@ -26,7 +26,7 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/dashboard/${user.uid}/stats`);
+      const response = await fetch(`https://food-waste-server-pio7.onrender.com/api/dashboard/${user.uid}/stats`);
       const data = await response.json();
       setStats(data.stats);
       setLoading(false);
@@ -321,7 +321,7 @@ const Dashboard = () => {
                       <div className="flex gap-4 items-center">
                         {post.image && (
                           <img 
-                                src={post.image} 
+                                src={post.image?.replace('http://localhost:5000', 'https://food-waste-server-pio7.onrender.com')} 
                                 alt={post.title} 
                                 className="w-20 h-20 object-cover rounded-lg shadow-md flex-shrink-0 border border-gray-600" 
                             />

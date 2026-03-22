@@ -5,8 +5,7 @@ import ChatWindow from "./ChatWindow";
 import { FiMessageCircle } from "react-icons/fi";
 import { AuthContext } from "../firebase/Provider/AuthProviders";
 
-// ✅ Socket একবার বানাও — component এর বাইরে রাখো
-const socket = io("http://localhost:5000", {
+const socket = io("https://food-waste-server-pio7.onrender.com", {
   reconnection: true,
   reconnectionAttempts: 5,
   reconnectionDelay: 1000,
@@ -22,17 +21,14 @@ const Messages = () => {
   useEffect(() => {
     if (!user?.uid) return;
 
-    // ✅ User নিজের room এ join করো (navbar badge এর জন্য)
     socket.emit("join-user", user.uid);
 
     fetchChats();
 
-    // ✅ disconnect করো না — socket জীবিত থাকবে
-    // return এ disconnect বাদ দেওয়া হয়েছে
+   
   }, [user]);
 
-  // ✅ Chats load হলে সব chat room এ join করো
-  // এতে যে chat এ message আসুক receiver সেটা পাবে
+
   useEffect(() => {
     if (chats.length > 0) {
       chats.forEach((chat) => {
@@ -54,7 +50,7 @@ const Messages = () => {
   const fetchChats = async () => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/messages/chats?userId=${user.uid}`
+        `https://food-waste-server-pio7.onrender.com/api/messages/chats?userId=${user.uid}`
       );
       const data = await response.json();
       setChats(data);

@@ -26,7 +26,7 @@ const PaymentForm = ({ post, quantity, orderData, onSuccess }) => {
     try {
       // Create payment intent
       const { data: intentData } = await axios.post(
-        "http://localhost:5000/api/payment/create-payment-intent",
+        "https://food-waste-server-pio7.onrender.com/api/payment/create-payment-intent",
         {
           amount: post.price * quantity,
           postId: post._id,
@@ -55,7 +55,7 @@ const PaymentForm = ({ post, quantity, orderData, onSuccess }) => {
       }
 
       // Confirm payment on backend
-      await axios.post("http://localhost:5000/api/payment/confirm-payment", {
+      await axios.post("https://food-waste-server-pio7.onrender.com/api/payment/confirm-payment", {
         paymentIntentId: paymentIntent.id,
         postId: post._id,
         userId: orderData.userId,
@@ -144,7 +144,7 @@ export const BookOrOrderModel = () => {
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/posts/${id}`);
+        const res = await axios.get(`https://food-waste-server-pio7.onrender.com/api/posts/${id}`);
         setPost(res.data);
 
         if (res.data.location?.coordinates) {
@@ -215,7 +215,7 @@ export const BookOrOrderModel = () => {
         : `/api/posts/${id}/order`;
       
       const res = await axios.put(
-        `http://localhost:5000${endpoint}`,
+        `https://food-waste-server-pio7.onrender.com${endpoint}`,
         submitData
       );
 
@@ -280,7 +280,7 @@ export const BookOrOrderModel = () => {
         <div className="bg-white rounded-b-2xl shadow-2xl px-6 pb-6 pt-4">
           
           <img
-            src={post.image}
+            src={post.image?.replace('http://localhost:5000', 'https://food-waste-server-pio7.onrender.com')}
             alt={post.title}
             className="w-full h-72 object-cover rounded-xl mb-4 shadow-md"
           />

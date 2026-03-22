@@ -7,7 +7,7 @@ import { useContext, useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import { AuthContext } from "../../firebase/Provider/AuthProviders";
 
-const socket = io("http://localhost:5000");
+const socket = io("https://food-waste-server-pio7.onrender.com");
 
 export const NavBar = () => {
   const { user, logOut } = useContext(AuthContext);
@@ -23,7 +23,7 @@ export const NavBar = () => {
     const fetchNotifCount = async () => {
       try {
         const res = await fetch(
-          `http://localhost:5000/api/notifications?userId=${user.uid}`
+          `https://food-waste-server-pio7.onrender.com/api/notifications?userId=${user.uid}`
         );
         const data = await res.json();
         const pending = data.filter((n) => n.status === "pending").length;
@@ -38,7 +38,7 @@ export const NavBar = () => {
     // Admin role check
     const checkAdmin = async () => {
       try {
-        const res  = await fetch(`http://localhost:5000/api/users/${user.uid}`);
+        const res  = await fetch(`https://food-waste-server-pio7.onrender.com/api/users/${user.uid}`);
         const data = await res.json();
         setIsAdmin(data?.role === "admin");
       } catch (err) {
@@ -143,7 +143,7 @@ export const NavBar = () => {
             <FiClock className="h-5 w-5" /> History
           </NavLink>
 
-          {/* Admin link — শুধু admin role এ দেখাবে */}
+         
           {isAdmin && (
             <NavLink to="/admin" className={navLinkClasses}>
               <FiShield className="h-5 w-5" /> Admin

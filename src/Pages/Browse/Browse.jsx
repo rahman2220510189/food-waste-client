@@ -40,7 +40,7 @@ export const Browse = () => {
     const fetchPosts = async () => {
       try {
         const params = { lat: userLocation.lat, lng: userLocation.lng };
-        const res = await axios.get("http://localhost:5000/api/posts", { params });
+        const res = await axios.get("https://food-waste-server-pio7.onrender.com/api/posts", { params });
         console.log("Fetched posts with distance:", res.data); // debug
         setPosts(res.data);
         setFiltered(res.data);
@@ -63,7 +63,7 @@ export const Browse = () => {
 
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/posts/search", {
+        const res = await axios.get("https://food-waste-server-pio7.onrender.com/api/posts/search", {
           params: { q: query }
         });
         setSuggestions(res.data.slice(0, 5));
@@ -81,7 +81,7 @@ export const Browse = () => {
     if (!q) return;
 
     try {
-      const res = await axios.get("http://localhost:5000/api/posts/search", {
+      const res = await axios.get("https://food-waste-server-pio7.onrender.com/api/posts/search", {
         params: { q }
       });
       setFiltered(res.data);
@@ -229,7 +229,7 @@ export const Browse = () => {
                 className="relative bg-white/10 backdrop-blur-md shadow-lg rounded-2xl overflow-hidden border border-white/20 hover:shadow-yellow-400/30 transition-all"
               >
                 <img
-                  src={post.image}
+                  src={post.image?.replace('http://localhost:5000', 'https://food-waste-server-pio7.onrender.com')}
                   alt={post.title}
                   className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
                 />
@@ -279,7 +279,7 @@ export const Browse = () => {
                         <button
                           onClick={async () => {
                             try {
-                              const res = await axios.put(`http://localhost:5000/api/posts/${post._id}/order`);
+                              const res = await axios.put(`https://food-waste-server-pio7.onrender.com/api/posts/${post._id}/order`);
                               alert(`✅ Order placed! Remaining: ${res.data.remaining}`);
 
                               const updatedPosts = posts.map((p) =>

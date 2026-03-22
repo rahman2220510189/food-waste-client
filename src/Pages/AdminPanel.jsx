@@ -6,7 +6,7 @@ import {
   FiUserX, FiArrowRight
 } from "react-icons/fi";
 
-const API = "http://localhost:5000/api/admin";
+const API = "https://food-waste-server-pio7.onrender.com/api/admin";
 
 // ── Helpers ───────────────────────────────────────────────
 const fmt = (date) => {
@@ -456,7 +456,7 @@ const AdminPanel = () => {
                         <tr key={f._id} className="hover:bg-gray-50 transition">
                           <td className="px-5 py-3">
                             <div className="flex items-center gap-3">
-                              {f.image && <img src={f.image} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />}
+                              {f.image && <img src={f.image?.replace('http://localhost:5000', 'https://food-waste-server-pio7.onrender.com')} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />}
                               <div>
                                 <p className="font-medium text-gray-800 truncate max-w-[180px]">{f.title}</p>
                                 <p className="text-xs text-gray-400 truncate max-w-[180px]">{f.location?.address || "—"}</p>
@@ -537,7 +537,7 @@ const AdminPanel = () => {
                         <tr key={p._id} className="hover:bg-gray-50 transition">
                           <td className="px-5 py-3">
                             <div className="flex items-center gap-2">
-                              {p.foodImage && <img src={p.foodImage} alt="" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />}
+                              {p.foodImage && <img src={p.foodImage?.replace('http://localhost:5000', 'https://food-waste-server-pio7.onrender.com')} alt="" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />}
                               <span className="font-medium text-gray-800 truncate max-w-[120px]">{p.foodTitle}</span>
                             </div>
                           </td>

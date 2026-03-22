@@ -16,12 +16,12 @@ const History = () => {
 
   const fetchHistory = async () => {
     try {
-      let url = `http://localhost:5000/api/history?userId=${user.uid}`;
+      let url = `https://food-waste-server-pio7.onrender.com/api/history?userId=${user.uid}`;
 
       if (filter === "accepted") {
-        url = `http://localhost:5000/api/history/accepted?userId=${user.uid}`;
+        url = `https://food-waste-server-pio7.onrender.com/api/history/accepted?userId=${user.uid}`;
       } else if (filter === "cancelled") {
-        url = `http://localhost:5000/api/history/cancelled?userId=${user.uid}`;
+        url = `https://food-waste-server-pio7.onrender.com/api/history/cancelled?userId=${user.uid}`;
       }
 
       const response = await fetch(url);

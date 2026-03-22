@@ -14,8 +14,7 @@ const ChatWindow = ({ chat, socket }) => {
       fetchMessages();
       socket.emit("join-chat", chat._id);
 
-      // receive-message: শুধু অন্যজনের message add করবে
-      // নিজেরটা handleSend এ সাথে সাথে add হয়ে যাবে
+     
       socket.on("receive-message", (message) => {
         if (message.senderId !== user.uid) {
           setMessages((prev) => [...prev, message]);
@@ -39,7 +38,7 @@ const ChatWindow = ({ chat, socket }) => {
   const fetchMessages = async () => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/messages/${chat._id}`
+        `https://food-waste-server-pio7.onrender.com/api/messages/${chat._id}`
       );
       const data = await response.json();
       setMessages(data);
@@ -60,7 +59,7 @@ const ChatWindow = ({ chat, socket }) => {
       text: newMessage.trim(),
     };
 
-    // Optimistic UI: নিজের message সাথে সাথে দেখাবে
+ 
     const optimisticMessage = {
       ...messageData,
       _id: `temp-${Date.now()}`,
@@ -70,12 +69,11 @@ const ChatWindow = ({ chat, socket }) => {
     setNewMessage("");
 
     try {
-      // শুধু socket দিয়ে পাঠাবে — server socket handler DB তে save করবে
-      // API আলাদা করে call করা দরকার নেই, double save হবে
+    
       socket.emit("send-message", messageData);
     } catch (error) {
       console.error("Error sending message:", error);
-      // Error হলে optimistic message সরিয়ে দাও
+      
       setMessages((prev) => prev.filter((m) => m._id !== optimisticMessage._id));
     }
   };
